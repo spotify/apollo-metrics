@@ -3,10 +3,58 @@
 This module integrates the [semantic-metrics](https://github.com/spotify/semantic-metrics) library
 with the Apollo request/response handling facilities.
 
-Including this this module in your assemly means that Apollo will add some metrics tracking
+Including this this module in your assembly means that Apollo will add some metrics tracking
 requests per endpoint.
 
-The metrics will be tagged with the following tags:
+
+## Usage
+
+Maven dependency
+
+```xml
+<dependency>
+    <groupId>com.spotify</groupId>
+    <artifactId>apollo-metrics</artifactId>
+    <version>1.0.0</version>
+</dependency>
+```
+
+To include the metrics module, add it to your service assembly (e.g. the
+[http-service](https://github.com/spotify/apollo/tree/master/apollo-http-service) assembly) by doing:
+
+```java
+public static void main(String[] args) throws LoadingException {
+  final Service myService = HttpService.usingAppInit(MyService::init, "my-service")
+      .withModule(MetricsModule.create())
+      .build();
+
+  HttpService.boot(myService, args);
+}
+```
+
+Or if using [apollo-core](https://github.com/spotify/apollo/tree/master/apollo-core) directly:
+
+```java
+public static void main(String[] args) throws IOException, InterruptedException {
+  final Service myService = Services.usingName("my-service")
+      .withModule(ApolloEnvironmentModule.create())
+      .withModule(MetricsModule.create())
+      .build();
+
+  try (Service.Instance instance = myService.start(args)) {
+    // set up
+
+    instance.waitForShutdown();
+  }
+}
+```
+
+Note that the metrics module requires [apollo-environment](https://github.com/spotify/apollo/tree/master/apollo-environment).
+
+
+## Metrics
+
+All metrics will be tagged with the following tags:
 
 | tag         | value                      | comment                                              |
 |-------------|----------------------------|------------------------------------------------------|
@@ -48,15 +96,10 @@ This metric will show you how many downstream requests each endpoint tends to ma
 
 ## Custom Metrics
 
-Previous versions of Apollo have been reporting some metrics at a finer level of granularity,
-for instance, adding tags for 'sending service' and 'content type' to metrics like the reply 
-payload size histogram. This is a feature that is valuable for some teams, but not all, and that 
-makes it harder to correctly get an idea of the totals, as well as increasing the load on our
-monitoring system. Therefore, that level of granularity has been removed as a standard feature.
-
-If you do want this, a sketch of a solution for adding server-side metrics is to create a 
-```Middleware``` that you wrap your endpoint handlers with. In that middleware, you can create
-```MetricId```s with the tags you want to track, and ensure that the correct metrics are generated.
+If you want more fine grained metrics, a sketch of a solution for adding server-side metrics is to
+create a  ```Middleware``` that you wrap your endpoint handlers with. In that middleware, you can
+create ```MetricId```s with the tags you want to track, and ensure that the correct metrics are
+generated.
 
 For client-side metrics, wrap the ```Client``` you get from the ```RequestContext``` in a similar
 way to how ```DecoratingClient``` is implemented. In your wrapper, ensure that the right metrics
@@ -122,3 +165,15 @@ for some description of how to do request handling decorations.
         );
   }
 ```
+
+
+## [ffwd](https://github.com/spotify/ffwd) reporter
+
+The metrics module includes the [ffwd reporter](https://github.com/spotify/semantic-metrics#provided-plugins)
+easily configurable from the apollo service configuration.
+
+key | type | required | note
+--- | --- | --- | ---
+`ffwd.host` | string | optional | host of ffwd agent, default:`localhost`
+`ffwd.port` | int | optional | port of ffwd agent, default:`19091`
+`ffwd.interval` | int| optional | reporting interval in seconds, default:`30`
