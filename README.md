@@ -96,16 +96,8 @@ This metric will show you how many downstream requests each endpoint tends to ma
 
 ## Custom Metrics
 
-If you want more fine grained metrics, a sketch of a solution for adding server-side metrics is to
-create a  ```Middleware``` that you wrap your endpoint handlers with. In that middleware, you can
-create ```MetricId```s with the tags you want to track, and ensure that the correct metrics are
-generated.
-
-For client-side metrics, wrap the ```Client``` you get from the ```RequestContext``` in a similar
-way to how ```DecoratingClient``` is implemented. In your wrapper, ensure that the right metrics
-are tracked.
-
-To get a `SemanticMetricRegistry`, use:
+To set up custom metrics on the application level you'll need to get hold of the
+`SemanticMetricRegistry` object. Use:
 ```java
   environment.resolve(SemanticMetricRegistry.class);
 ```
@@ -119,12 +111,15 @@ Alternatively, you could set up an `EndpointRunnableFactoryDecorator` and regist
 it, similar to how the metrics module does:
 ```java
     Multibinder.newSetBinder(binder(), EndpointRunnableFactoryDecorator.class)
-        .addBinding().to(StatsCollectingEndpointRunnableFactoryDecorator.class);
+        .addBinding().to(MetricsCollectingEndpointRunnableFactoryDecorator.class);
 ```
 See [Extending incoming/outgoing request handling]
 (https://github.com/spotify/apollo/tree/master/apollo-environment#extending-incomingoutgoing-request-handling)
 for some description of how to do request handling decorations.
 
+For client-side metrics, wrap the ```Client``` you get from the ```RequestContext``` in a similar
+way to how ```DecoratingClient``` is implemented. In your wrapper, ensure that the right metrics
+are tracked.
 
 ### Custom per-endpoint response payload size histogram example
 
